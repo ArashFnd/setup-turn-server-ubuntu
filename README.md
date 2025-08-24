@@ -68,3 +68,68 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   Certificates land under `/etc/letsencrypt/live/turn.yourdomain.com/`.
 
   Auto-renew will run via systemd timer; we’ll tell coturn to use these paths.
+
+## 5) Configure coturn
+  Open `/etc/turnserver.conf` and paste this **minimal**, **hardened** config (adjust comments/values):
+  ```bash
+  ########################################################################
+  # Core identity
+  ########################################################################
+  # Your public DNS name
+  listening-ip=YOUR_SERVER_PUBLIC_IPV4
+  # If you have IPv6, also:
+  # listening-ip=YOUR_SERVER_PUBLIC_IPV6
+  relay-ip=YOUR_SERVER_PUBLIC_IPV4
+  
+  # Public hostname (must resolve to this box)
+  realm=webrtc.yourdomain.com
+  server-name=turn.yourdomain.com
+  
+  ########################################################################
+  # Ports
+  ########################################################################
+  listening-port=3478
+  tls-listening-port=5349
+  
+  # Restrict relay range (open these in firewall!)
+  min-port=49160
+  max-port=49200
+  
+  ########################################################################
+  # Security / credentials (TURN REST)
+  ########################################################################
+  fingerprint
+  use-auth-secret
+  static-auth-secret=PUT_THE_SECRET_FROM_STEP_3_HERE
+  # Optional: tighten valid window (default ~1 day). 3600 = 1 hour
+  # stale-nonce=600
+  # user-quota=12
+  total-quota=1200
+  no-multicast-peers
+  no-loopback-peers
+  no-cli
+  
+  ########################################################################
+  # TLS
+  ########################################################################
+  cert=/etc/letsencrypt/live/turn.yourdomain.com/fullchain.pem
+  pkey=/etc/letsencrypt/live/turn.yourdomain.com/privkey.pem
+  dh-file=/etc/ssl/certs/dhparam.pem
+  
+  ########################################################################
+  # Misc best practices
+  ########################################################################
+  log-file=/var/log/turnserver/turnserver.log
+  simple-log
+  no-stdout-log
+  cli-password=$(openssl rand -hex 16)
+  ```
+  Create the DH params (once):
+  ```bash
+  sudo openssl dhparam -out /etc/ssl/certs/dhparam.pem 2048
+  ```
+  Edit the file to set:
+  - `YOUR_SERVER_PUBLIC_IPV4` (and IPv6 if used),
+  - the `static-auth-secret` you generated,
+  - `realm` and `server-name` matching your domain(s),
+  - cert paths exactly as certbot created.
