@@ -44,3 +44,14 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   # Enable service startup
   echo "TURNSERVER_ENABLED=1" | sudo tee /etc/default/coturn
   ```
+
+## 3) (Recommended) Use TURN REST credentials (ephemeral)
+  This is the safest & most common WebRTC pattern:
+  - coturn uses a shared secret to verify HMAC-based, time-limited usernames/credentials your app generates on the fly.
+  - Your app creates a `username` like `<unixTimestamp>:<userId>` and an HMAC-SHA1 signature as the `credential`.
+  Pick a realm and shared secret:
+  ```bash
+  TURN_REALM="webrtc.yourdomain.com"   # can be your main domain; must match in config
+  TURN_SECRET="$(openssl rand -hex 32)" # save this; you'll put it in your app server too
+  echo "$TURN_SECRET"
+  ```
