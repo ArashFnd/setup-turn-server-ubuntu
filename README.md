@@ -253,3 +253,29 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
     console.log(`TURN creds server running on http://localhost:${port}`);
   });
   ```
+
+## 9) Use it in `RTCPeerConnection` (browser)
+  ```bash
+  // Assuming your app fetched { username, credential } from your server
+  const { username, credential } = await fetch('/api/turn-creds').then(r => r.json());
+  
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      // Optional: public STUN (not strictly needed if TURN always used)
+      { urls: ['stun:stun.l.google.com:19302'] },
+  
+      // TURN over UDP (fastest)
+      { urls: ['turn:turn.yourdomain.com:3478?transport=udp'], username, credential },
+  
+      // TURN over TCP (fallback for UDP-restricted networks)
+      { urls: ['turn:turn.yourdomain.com:3478?transport=tcp'], username, credential },
+  
+      // TURN over TLS (best for strict firewalls/proxies)
+      { urls: ['turns:turn.yourdomain.com:5349?transport=tcp'], username, credential },
+    ],
+    // Optional: tweak bundlePolicy/iceTransportPolicy if you must
+  });
+  ```
+  Tips:
+  - Keep **UDP first** for performance, then TCP, then TLS.
+  - If you want to force relay for testing: `iceTransportPolicy: 'relay'`.
