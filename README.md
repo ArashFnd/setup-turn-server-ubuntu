@@ -157,3 +157,25 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   sudo tail -f /var/log/turnserver/turnserver.log
   ```
   You should see it binding on 0.0.0.0:3478, 0.0.0.0:5349, etc., and your chosen relay range.
+
+  **Troubleshooting:**
+  In this step, I got below error:
+  ```bash
+  tail: cannot open /var/log/turnserver/turnserver.log for reading: No such file or directory
+  tail: no files remaining
+  ```
+  Here is **how to fix it**:
+  That error just means coturn isn’t writing to a file yet. In the config I gave, we set `log-file=/var/log/turnserver/turnserver.log` and `no-stdout-log`. If the directory/file doesn’t exist or isn’t writable by the turnserver user, tail has nothing to read.
+  **solution:**
+  1. Edit `/etc/turnserver.conf` and comment out these lines:
+  ```bash
+  # log-file=/var/log/turnserver/turnserver.log
+  # no-stdout-log
+  ```
+  (Keep `simple-log` or add `verbose` temporarily for debugging.)
+  Restart and watch logs:
+  ```bash
+  sudo systemctl restart coturn
+  sudo systemctl status coturn --no-pager
+  sudo journalctl -u coturn -f --no-pager
+  ```
