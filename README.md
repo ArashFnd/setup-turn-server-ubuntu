@@ -33,3 +33,14 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
     - **Proxy status**: **DNS only** (⚪️ **grey cloud**, not orange). TURN needs raw UDP/TCP; Cloudflare’s proxy breaks it.
   - (Optional) Add AAAA for IPv6 with DNS only as well.
   2. Wait for DNS to propagate (usually quick).
+
+## 2) Install coturn and basics on Ubuntu
+   ```bash
+  sudo apt update
+  sudo apt install -y coturn ufw jq
+  ```
+  Enable the systemd service (Ubuntu disables it by default via a guard file):
+  ```bash
+  # Enable service startup
+  echo "TURNSERVER_ENABLED=1" | sudo tee /etc/default/coturn
+  ```
