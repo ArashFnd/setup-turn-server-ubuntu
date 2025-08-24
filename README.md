@@ -279,3 +279,15 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   Tips:
   - Keep **UDP first** for performance, then TCP, then TLS.
   - If you want to force relay for testing: `iceTransportPolicy: 'relay'`.
+
+## 10) Common pitfalls & fixes
+  - **Cloudflare must be “DNS only” (grey cloud)** for the turn record. The orange proxy breaks UDP/TCP TURN.
+  - **Wrong DNS name in** `realm`: The `realm` in coturn should be a domain you control (often your main site domain). The username HMAC uses the secret only, but some clients validate the realm; keep it consistent.
+  - **Ports not open**: Ensure both your OS firewall and cloud security groups allow the ports listed above.
+  - **Symmetric NAT / restrictive networks**: Always offer the `turns:` **5349** entry. Some enterprise networks allow only outbound 443/TCP; consider also running coturn on **443/TCP/TLS** (advanced: `tls-listening-port=443`, but you must then move any web server off 443 or use a second IP).
+  - **Cert renewals**: certbot auto-renews; coturn needs a reload to pick up new certs. Add a deploy hook:
+  ```bash
+  echo -e '#!/bin/sh\nsystemctl reload coturn' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-coturn.sh
+  sudo chmod +x /etc/letsencrypt/renewal-hooks/deploy/reload-coturn.sh
+  ```
+  - **Logs too quiet**: Remove simple-log or add verbose temporarily for debugging (don’t leave verbose on in prod).
