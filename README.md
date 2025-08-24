@@ -55,3 +55,16 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   TURN_SECRET="$(openssl rand -hex 32)" # save this; you'll put it in your app server too
   echo "$TURN_SECRET"
   ```
+
+## 4) Get TLS certificate (so you can offer turns: on 5349)
+  **Use certbot + standalone (quickest)**
+  Make sure ports 80 and 443 are free while issuing:
+  ```bash
+  sudo apt install -y certbot
+  sudo systemctl stop coturn || true
+  
+  sudo certbot certonly --standalone -d turn.yourdomain.com --agree-tos -m you@example.com --non-interactive
+  ```
+  Certificates land under `/etc/letsencrypt/live/turn.yourdomain.com/`.
+
+  Auto-renew will run via systemd timer; we’ll tell coturn to use these paths.
