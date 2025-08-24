@@ -179,3 +179,77 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   sudo systemctl status coturn --no-pager
   sudo journalctl -u coturn -f --no-pager
   ```
+  **Why this happened:**
+  - With `no-stdout-log`, coturn won’t write to journald/syslog.
+  - With `log-file=... set`, it tries to write to that path, but the default package doesn’t create `/var/log/turnserver/`. Creating it (and giving ownership to the `turnserver` user) or switching to journald fixes the issue.
+
+## 8) Generate credentials in your app (TURN REST)
+  Use the same `static-auth-secret` on your app server (never expose it to the browser). Example **Node.js** helper:
+  Create a `.env`:
+  ```bash
+  # .env
+  TURN_SECRET=PUT_THE_STATIC_AUTH_SECRET_FROM_COTURN_HERE
+  TURN_TTL=3600                      # seconds (1h)
+  TURN_HOST=turn.yourdomain.com      # your Cloudflare DNS-only hostname
+  ```
+  Write this code on your `index.js` file:
+  ```bash
+  // index.js
+  require('dotenv').config();
+  const express = require('express');
+  const crypto = require('crypto');
+  
+  const app = express();
+  app.use(express.json());
+  
+  // ENV
+  const TURN_SECRET = process.env.TURN_SECRET;
+  const TURN_TTL = Number(process.env.TURN_TTL || 3600);
+  const TURN_HOST = process.env.TURN_HOST;
+  
+  if (!TURN_SECRET || !TURN_HOST) {
+    console.error('Missing TURN_SECRET or TURN_HOST in env');
+    process.exit(1);
+  }
+  
+  /**
+   * Build TURN REST creds:
+   * username = <unix_expiry_timestamp>:<userId>
+   * credential = base64(HMAC_SHA1(secret, username))
+   */
+  function buildTurnCredentials(userId = 'user') {
+    const username = `${Math.floor(Date.now() / 1000) + TURN_TTL}:${userId}`;
+    const hmac = crypto.createHmac('sha1', TURN_SECRET).update(username).digest('base64');
+    return { username, credential: hmac };
+  }
+  
+  /**
+   * (Recommended) Protect this route with your auth/session in a real app.
+   * This example just accepts optional ?u=<userId>
+   */
+  app.get('/api/turn', (req, res) => {
+    const userId = (req.query.u || 'user').toString();
+    const { username, credential } = buildTurnCredentials(userId);
+  
+    // Return a ready-to-use iceServers array
+    const iceServers = [
+      { urls: ['stun:stun.l.google.com:19302'] }, // optional
+      {
+        urls: [
+          `turn:${TURN_HOST}:3478?transport=udp`,
+          `turn:${TURN_HOST}:3478?transport=tcp`,
+          `turns:${TURN_HOST}:5349?transport=tcp`,
+        ],
+        username,
+        credential,
+      },
+    ];
+  
+    res.json({ ttl: TURN_TTL, iceServers });
+  });
+  
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log(`TURN creds server running on http://localhost:${port}`);
+  });
+  ```
