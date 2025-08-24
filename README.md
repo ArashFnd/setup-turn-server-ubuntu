@@ -148,3 +148,12 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   sudo ufw status
   ```
   > If your cloud provider has a separate security group, open the same ports there.
+
+## 7) Start coturn and check logs
+  ```bash
+  sudo systemctl restart coturn
+  sudo systemctl enable coturn
+  sudo systemctl status coturn --no-pager
+  sudo tail -f /var/log/turnserver/turnserver.log
+  ```
+  You should see it binding on 0.0.0.0:3478, 0.0.0.0:5349, etc., and your chosen relay range.
