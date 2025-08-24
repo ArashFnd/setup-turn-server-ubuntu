@@ -133,3 +133,18 @@ This repo documents a production-ready TURN setup for WebRTC using **coturn** on
   - the `static-auth-secret` you generated,
   - `realm` and `server-name` matching your domain(s),
   - cert paths exactly as certbot created.
+
+## 6) Open the firewall
+  Using **ufw**:
+  ```bash
+  sudo ufw allow 22/tcp
+  sudo ufw allow 3478/tcp
+  sudo ufw allow 3478/udp
+  sudo ufw allow 5349/tcp
+  sudo ufw allow 5349/udp
+  sudo ufw allow 49160:49200/tcp
+  sudo ufw allow 49160:49200/udp
+  sudo ufw enable
+  sudo ufw status
+  ```
+  > If your cloud provider has a separate security group, open the same ports there.
